@@ -14,7 +14,7 @@ os.add_dll_directory("C:\\Program Files (x86)\\Intel\\openvino_2021.4.689\\deplo
 os.add_dll_directory("C:\\Program Files (x86)\\Intel\\openvino_2021.4.689\\opencv\\bin")
 os.add_dll_directory("C:\\Program Files (x86)\\Intel\\openvino_2021.4.689\\python\\python3.9\\openvino\\libs")
 os.add_dll_directory("C:\\Users\\ermol\\openvino-virtual-environments\\openvinoenv\\Lib\\site-packages\\pytest")
-
+import warnings
 import os
 import pytest
 import cv2
@@ -78,12 +78,10 @@ class InferenceEngineClassifier:
 
 def build_argparser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-m', '--model', help='Path to an .xml \
-        file with a trained model.', required=True, type=str)
-    parser.add_argument('-w', '--weights', help='Path to an .bin file \
-        with a trained weights.', required=True, type=str)
-    parser.add_argument('-i', '--input', help='Path to \
-        image file', required=True, type=str)
+
+    parser.add_argument('-m', '--model', help='Path to an .xml file with a trained model.', default='C:\\Users\\ermol\\public\\squeezenet1.1\\FP16\\squeezenet1.1.xml', type=str)
+    parser.add_argument('-w', '--weights', help='Path to an .bin file with a trained weights.', default='C:\\Users\\ermol\\public\\squeezenet1.1\\FP16\\squeezenet1.1.bin', type=str)
+    parser.add_argument('-i', '--input', help='Path to image file', default='C:\\Users\\ermol\\PycharmProjects\\practice\\monkey.jpeg', type=str)
     parser.add_argument('-d', '--device', help='Specify the target \
         device to infer on; CPU, GPU, FPGA or MYRIAD is acceptable. \
         Sample will look for a suitable plugin for device specified \
@@ -92,25 +90,27 @@ def build_argparser():
         names', type=str, default=None)
     return parser
 
+#image with doge_class.py
 
-def test_main():
-    #log.basicConfig(format="[ %(levelname)s ] %(message)s",level=log.INFO, stream=sys.stdout)
-    #args = build_argparser().parse_args()
-    
+@pytest.mark.parametrize("IMAGE, RESULT",[(str('monkey.jpeg'),373),
+(str('wolf_spider.jpg'),77),
+(str('cut.jpg'),285)
+])
+def test_main(IMAGE,RESULT):
+
+    warnings.filterwarnings("ignore")
+
+    model = str('C:\\Users\\ermol\\public\\squeezenet1.1\\FP16\\squeezenet1.1.xml')
+    weights = str('C:\\Users\\ermol\\public\\squeezenet1.1\\FP16\\squeezenet1.1.bin')
+    input = IMAGE
+    device = str('CPU')
+
     log.info("Start IE classification sample")
-    ie_classifier = InferenceEngineClassifier(configPath=r'C:\\Users\\ermol\\public\\squeezenet1.1\\FP16\\squeezenet1.1.xml',
-    weightsPath=r'C:\\Users\\ermol\\public\\squeezenet1.1\\FP16\\squeezenet1.1.bin',device=r'C:\\Users\\ermol\\PycharmProjects\\practice\\monkey.jpeg',
-    classesPath=r'C:\\Users\\ermol\\PycharmProjects\\practice\\imagenet_synset_words.txt')
-    path = r'C:\Users\ermol\PycharmProjects\practice\monkey.jpeg'
-    img = cv2.imread(path)
+    ie_classifier = InferenceEngineClassifier(configPath=model,weightsPath=weights, device=device ,classesPath=None)
+    img = cv2.imread(input)
     prob = ie_classifier.classify(img)
 
     predictions = ie_classifier.test_get_top(prob, 5)
 
-    #log.info("Predictions: " + str(predictions))
-
-    return
-
-
-#if __name__ == '__main__':
- #   sys.exit(test_main())
+    assert predictions[0] == RESULT
+    
